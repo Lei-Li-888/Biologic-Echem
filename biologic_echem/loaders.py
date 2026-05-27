@@ -13,6 +13,7 @@ All loaders return a DataFrame with three standardized columns:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -28,10 +29,15 @@ def _normalize(col: str) -> str:
 
 
 def _find_col(df: pd.DataFrame, patterns: list[str]) -> str | None:
-    """Return the first column whose lowercase name contains any pattern."""
-    for col in df.columns:
-        norm = _normalize(col)
-        for pat in patterns:
+    """Return the first column matching the highest-priority pattern.
+
+    Patterns are tried in order; within each pattern every column is scanned.
+    This ensures a specific pattern (e.g. ``"time/s"``) wins over a loose one
+    (e.g. ``"time"``) regardless of column order in the DataFrame.
+    """
+    cols_lower = [_normalize(c) for c in df.columns]
+    for pat in patterns:
+        for col, norm in zip(df.columns, cols_lower):
             if pat in norm:
                 return col
     return None
@@ -124,9 +130,6 @@ def load_xlsx(path: str | Path, skip_rows: int = 1) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # File discovery helpers
 # ---------------------------------------------------------------------------
-
-import re
-
 
 def discover_rate_files(
     folder: str | Path,

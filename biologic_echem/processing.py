@@ -21,13 +21,17 @@ import pandas as pd
 
 def segment_halfcycles(
     df: pd.DataFrame,
-    rolling_window: int = 11,
-    min_points: int = 20,
+    rolling_window: int | None = None,
+    min_points: int | None = None,
 ) -> list[pd.DataFrame]:
     """Split a charge-discharge dataset into alternating half-cycles.
 
     Uses median smoothing on the current to avoid spurious splits from noise.
     Short segments (< ``min_points``) are merged into their neighbours.
+
+    Both ``rolling_window`` and ``min_points`` default to ``None``, which means
+    they are chosen automatically from the data length.  This handles sparse
+    high-rate datasets (e.g. 20C with only ~18 rows) as well as dense 1C data.
 
     Parameters
     ----------
@@ -35,13 +39,21 @@ def segment_halfcycles(
         DataFrame with columns ``t`` (s), ``E`` (V), ``I`` (mA).
     rolling_window:
         Points for current-smoothing median filter.
+        Default: ``min(11, max(3, len(df) // 10))``.
     min_points:
         Minimum half-cycle length; shorter ones are merged.
+        Default: ``max(2, len(df) // 40)``.
 
     Returns
     -------
     List of DataFrames, each representing one half-cycle (charge or discharge).
     """
+    n = len(df)
+    if rolling_window is None:
+        rolling_window = min(11, max(3, n // 10))
+    if min_points is None:
+        min_points = max(2, n // 40)
+
     I = pd.Series(df["I"].values, dtype=float)
     I_smooth = I.rolling(rolling_window, center=True, min_periods=1).median()
     sign = np.sign(I_smooth.to_numpy()).astype(float)

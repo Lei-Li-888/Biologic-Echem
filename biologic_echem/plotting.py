@@ -199,3 +199,51 @@ def style_axes(
         ax.set_ylim(v_lim)
     ax.spines[["top", "right"]].set_visible(False)
     ax.tick_params(direction="in", labelsize=fontsize - 1)
+    if ax.get_xlabel():
+        ax.set_xlabel(ax.get_xlabel(), fontsize=fontsize)
+    if ax.get_ylabel():
+        ax.set_ylabel(ax.get_ylabel(), fontsize=fontsize)
+
+
+# ---------------------------------------------------------------------------
+# Rate-capability summary
+# ---------------------------------------------------------------------------
+
+def plot_rate_summary(
+    ax: Axes,
+    labels: list[str],
+    Q_chg: list[float],
+    Q_dis: list[float],
+    bar_width: float = 0.35,
+    chg_color: str = CHARGE_COLOR,
+    dis_color: str = DISCHARGE_COLOR,
+) -> None:
+    """Bar chart of charge/discharge capacity vs. C-rate.
+
+    A standard figure in battery papers to show rate capability at a glance.
+
+    Parameters
+    ----------
+    ax:        Matplotlib Axes.
+    labels:    C-rate labels, e.g. ``["1C", "2C", "5C", "10C", "20C"]``.
+    Q_chg:     Charge specific capacity (mAh g⁻¹) for each rate.
+    Q_dis:     Discharge specific capacity (mAh g⁻¹) for each rate.
+    bar_width: Width of each bar group.
+
+    Example
+    -------
+    >>> fig, ax = new_figure(figsize=(6, 4))
+    >>> plot_rate_summary(ax, labels, Q_chg_list, Q_dis_list)
+    >>> style_axes(ax, title="Rate Capability")
+    """
+    import numpy as np
+
+    x = np.arange(len(labels))
+    ax.bar(x - bar_width / 2, Q_chg, bar_width, color=chg_color,
+           alpha=0.85, label="charge")
+    ax.bar(x + bar_width / 2, Q_dis, bar_width, color=dis_color,
+           alpha=0.85, label="discharge")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_xlabel("C-rate")
+    ax.set_ylabel("Specific Capacity (mAh g⁻¹)")
